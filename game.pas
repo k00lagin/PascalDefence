@@ -69,8 +69,8 @@ begin
 		write('†');
 	end;
 ///////////////////
-	if (isMoneyChanged) then begin textbackground(0); textcolor(7); gotoxy(17,24); write(money:3); end;
-	if (isHpChanged) then begin textbackground(0); textcolor(7); gotoxy(6,24); write(hp:3); end;
+	if (isMoneyChanged) then begin textbackground(0); textcolor(7); gotoxy(17,24); write(money:3); isMoneyChanged:=false; end;
+	if (isHpChanged) then begin textbackground(0); textcolor(7); gotoxy(6,24); write(hp:3);	isHpChanged:=false; end;
 	gotoxy(x,y);
 end;
 procedure gameOver();
