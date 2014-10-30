@@ -48,14 +48,15 @@ end;
 procedure spawnMob(letter:char; x,y:coord; hp:integer; damage,speed:byte);
 var a:Integer;
 begin
-	a:=sizeof(mobs);
-	setlength(mobs,a div 8 +1);
-	mobs[a div 8-1].letter:=letter;
-	mobs[a div 8-1].x:=x;
-	mobs[a div 8-1].y:=y;
-	mobs[a div 8-1].hp:=hp;
-	mobs[a div 8-1].damage:=damage;
-	mobs[a div 8-1].speed:=speed;
+	a:=high(mobs);
+	setlength(mobs,a + 2);
+	inc(a);
+	mobs[a].letter:=letter;
+	mobs[a].x:=x;
+	mobs[a].y:=y;
+	mobs[a].hp:=hp;
+	mobs[a].damage:=damage;
+	mobs[a].speed:=speed;
 end;
 procedure draw();
 var i,j:integer;
@@ -77,8 +78,8 @@ begin
 	    end;
 	prevmap:=map;
 ///////////////////
-	if ((sizeof(mobs)div 8)>0) then
-	for counter:=0 to (sizeof(mobs)div 8)-1 do begin
+	if (high(mobs)>=0) then
+	for counter:=0 to high(mobs) do begin
 		gotoxy(mobs[counter].x,mobs[counter].y);
 		write(mobs[counter].letter);
 	end;
@@ -103,7 +104,8 @@ begin
 end;
 procedure update();
 begin
-	for counter:=1 to 1 do begin
+	if (high(mobs)>=0) then
+	for counter:=0 to high(mobs) do begin
 		if (map[mobs[counter].x,mobs[counter].y]='ฐ') then begin decHP(10); end;
 		if (mobs[counter].x<30) then mobs[counter].x:=mobs[counter].x+1;
 	end;
@@ -120,10 +122,7 @@ begin
 	InitKeyBoard;
 	hp:=200;
 	money:=100;
-	//spawnMob('',2,4,1,2,3);
-	//mobs[1].x:=1;
-	//mobs[1].y:=8;
-	//mobs[1].letter:='W';
+	spawnMob('',1,8,1,2,3);
 gotoxy(1,22);
 write('ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ');
 gotoxy(2,24); write('HP: ',hp:3,'     $: ',money:3);
@@ -143,7 +142,7 @@ repeat
 	//'g': gameOver();
 	end;
 	draw();
-	//update();
+	update();
 Until (GetKeyEventChar(K)='q');
 DoneKeyBoard;
 end.
