@@ -3,6 +3,7 @@ uses crt, keyboard;
 type
 	coord = 1..30;
 	mob = record
+		letter : char;
 		x : coord;
 		y : coord;
 		hp : integer;
@@ -16,7 +17,7 @@ map,prevmap: array[1..30,1..20] of char;
 money:Longint;
 hp:Byte;
 isHpChanged,isMoneyChanged:Boolean;
-mobs: array[1..100] of mob;
+mobs: array of mob;
 K : TKeyEvent;
 input: file of char;
 procedure frite(tclr,bclr:byte; text:string);
@@ -44,6 +45,18 @@ begin
     	speed:= 0;
     end;
 end;
+procedure spawnMob(letter:char; x,y:coord; hp:integer; damage,speed:byte);
+var a:Integer;
+begin
+	a:=sizeof(mobs);
+	setlength(mobs,a div 8 +1);
+	mobs[a div 8-1].letter:=letter;
+	mobs[a div 8-1].x:=x;
+	mobs[a div 8-1].y:=y;
+	mobs[a div 8-1].hp:=hp;
+	mobs[a div 8-1].damage:=damage;
+	mobs[a div 8-1].speed:=speed;
+end;
 procedure draw();
 var i,j:integer;
 begin
@@ -64,9 +77,10 @@ begin
 	    end;
 	prevmap:=map;
 ///////////////////
-	for counter:=1 to 1 do begin
+	if ((sizeof(mobs)div 8)>0) then
+	for counter:=0 to (sizeof(mobs)div 8)-1 do begin
 		gotoxy(mobs[counter].x,mobs[counter].y);
-		write('');
+		write(mobs[counter].letter);
 	end;
 ///////////////////
 	if (isMoneyChanged) then begin textbackground(0); textcolor(7); gotoxy(17,24); write(money:3); isMoneyChanged:=false; end;
@@ -106,8 +120,10 @@ begin
 	InitKeyBoard;
 	hp:=200;
 	money:=100;
-	mobs[1].x:=1;
-	mobs[1].y:=8;
+	//spawnMob('',2,4,1,2,3);
+	//mobs[1].x:=1;
+	//mobs[1].y:=8;
+	//mobs[1].letter:='W';
 gotoxy(1,22);
 write('ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ');
 gotoxy(2,24); write('HP: ',hp:3,'     $: ',money:3);
@@ -127,7 +143,7 @@ repeat
 	//'g': gameOver();
 	end;
 	draw();
-	update();
+	//update();
 Until (GetKeyEventChar(K)='q');
 DoneKeyBoard;
 end.
