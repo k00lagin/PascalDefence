@@ -10,6 +10,10 @@ type
 		damage : byte;
 		speed : byte;
 	end;
+	dot = record
+		x : coord;
+		y : coord;		
+	end;
 var a:char;
 b:integer;
 x,y,i,j,f,counter:shortint;
@@ -20,6 +24,7 @@ isHpChanged,isMoneyChanged:Boolean;
 mobs: array of mob;
 K : TKeyEvent;
 input: file of char;
+toRedraw: array of dot;
 procedure frite(tclr,bclr:byte; text:string);
 begin
 	textcolor(tclr);
@@ -63,19 +68,33 @@ var i,j:integer;
 begin
 	for i:=1 to 30 do
 	  for j:=1 to 20 do
-	  	if ((map[i,j]<>prevmap[i,j]) or (map[i,j]='ฑ'))  then begin
+	  	if (map[i,j]<>prevmap[i,j])  then begin
 	  		gotoxy(i,j);
-	    	case map[i,j] of
-	    		' ': begin frite(0,15,' '); end;
-	    		'f': begin frite(10,2,'ฐ'); end; //field
-	    		'#': begin frite(8,7,'#'); end; //rocks
-	    		's': begin frite(15,6,'ฐ'); end; //sand
-	    		'h': begin frite(2,7,'h'); end; //small tower
-	    		'H': begin frite(2,7,'H'); end; //big tower
-	    		'ฒ','ฑ','ฐ': begin if odd(i) then frite(8,7,'Ü') else frite(8,7,'฿'); end //exit,entrance,path
-	    		else frite(7,0,map[i,j]);
-	    	end;
+	  		case map[i,j] of
+	  			' ': frite(0,15,' ');
+	  			'f': frite(10,2,'ฐ');  //field
+	  			'#': frite(8,7,'#');  //rocks
+	  			's': frite(15,6,'ฐ');  //sand
+	  			'h': frite(2,7,'h');  //small tower
+	  			'H': frite(2,7,'H');  //big tower
+	  			'ฒ','ฑ','ฐ': begin if odd(i) then frite(8,7,'Ü') else frite(8,7,'฿'); end //exit,entrance,path
+	  			else frite(7,0,map[i,j]);
+	  		end;
 	    end;
+	 for i:=high(toRedraw) downto 0 do begin
+	 	gotoxy(toRedraw[i].x,toRedraw[i].y);
+	    case map[toRedraw[i].x,toRedraw[i].y] of
+	    	' ': frite(0,15,' ');
+	    	'f': frite(10,2,'ฐ');  //field
+	    	'#': frite(8,7,'#');  //rocks
+	    	's': frite(15,6,'ฐ');  //sand
+	    	'h': frite(2,7,'h');  //small tower
+	    	'H': frite(2,7,'H');  //big tower
+	    	'ฒ','ฑ','ฐ': begin if odd(toRedraw[i].x) then frite(8,7,'Ü') else frite(8,7,'฿'); end //exit,entrance,path
+	    	else frite(7,0,map[toRedraw[i].x,toRedraw[i].y]);
+	    end;
+	    setlength(toRedraw,high(toRedraw));
+	 end;
 	prevmap:=map;
 ///////////////////
 	if (high(mobs)>=0) then
@@ -103,11 +122,19 @@ begin
 	if (hp=0) then gameOver;
 end;
 procedure update();
+var a:Integer;
 begin
 	if (high(mobs)>=0) then
 	for counter:=0 to high(mobs) do begin
 		if (map[mobs[counter].x,mobs[counter].y]='ฐ') then begin decHP(10); end;
-		if (mobs[counter].x<30) then mobs[counter].x:=mobs[counter].x+1;
+		if (mobs[counter].x<30) then begin
+			a:=high(toRedraw);
+			setlength(toRedraw,a + 2);
+			inc(a);
+			toRedraw[a].x:=mobs[counter].x;
+			toRedraw[a].y:=mobs[counter].y;
+			mobs[counter].x:=mobs[counter].x+1;
+		end;
 	end;
 end;
 begin
@@ -128,21 +155,24 @@ write('อออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
 gotoxy(2,24); write('HP: ',hp:3,'     $: ',money:3);
 x:=1; y:=1;
 repeat
-	K:=GetKeyEvent;
-	K:=TranslateKeyEvent(K);
-	case GetKeyEventChar(K) of
-	'd': if (x<30) then x:=x+1;
-	'a': if (x>1) then x:=x-1;
-	's': if (y<20) then y:=y+1;
-	'w': if (y>1) then y:=y-1;
-	'h': if ((money>=10) and isAvailable(map[x,y])) then begin map[x,y]:='h'; isMoneyChanged:=true; money:=money-10; end;
-	'j': if ((money>=20) and isAvailable(map[x,y])) then begin map[x,y]:='H'; isMoneyChanged:=true; money:=money-20; end;
-	'k': map[x,y]:='0';
-	'l': map[x,y]:='1';
-	//'g': gameOver();
+	if KeyPressed then begin
+		K:=GetKeyEvent;
+		K:=TranslateKeyEvent(K);
+		case GetKeyEventChar(K) of
+		'd': if (x<30) then x:=x+1;
+		'a': if (x>1) then x:=x-1;
+		's': if (y<20) then y:=y+1;
+		'w': if (y>1) then y:=y-1;
+		'h': if ((money>=10) and isAvailable(map[x,y])) then begin map[x,y]:='h'; isMoneyChanged:=true; money:=money-10; end;
+		'j': if ((money>=20) and isAvailable(map[x,y])) then begin map[x,y]:='H'; isMoneyChanged:=true; money:=money-20; end;
+		'k': map[x,y]:='0';
+		'l': map[x,y]:='1';
+		//'g': gameOver();
+		end;
 	end;
 	draw();
 	update();
+	delay(400);
 Until (GetKeyEventChar(K)='q');
 DoneKeyBoard;
 end.
