@@ -3,16 +3,20 @@ uses crt,keyboard,sysutils,DateUtils;
 type
 	coord = 1..30;
 	mob = record
-		letter : char;
 		x : coord;
 		y : coord;
 		hp : integer;
-		damage : byte;
-		speed : byte;
+		number: byte;
 	end;
 	dot = record
 		x : coord;
 		y : coord;		
+	end;
+	specie = record
+		letter : char;
+		maxHp: word;
+		damage: word;
+		speed: byte;
 	end;
 var a:char;
 b:integer;
@@ -27,6 +31,8 @@ input: file of char;
 toRedraw: array of dot;
 //TIMERS
 lastRedraw,lastUpdate: TDateTime;
+/////
+species: array of specie;
 procedure frite(tclr,bclr:byte; text:string);
 begin
 	textcolor(tclr);
@@ -44,18 +50,15 @@ begin
 	if (n<high(mobs)) then for i:= n to high(mobs)-1 do mobs[i]:= mobs[i+1];
 	//setlength(mobs,high(mobs));
 end;
-procedure spawnMob(letter:char; x,y:coord; hp:integer; damage,speed:byte);
+procedure spawnMob(number:byte; x,y:coord);
 var a:Integer;
 begin
 	a:=high(mobs);
 	setlength(mobs,a + 2);
 	inc(a);
-	mobs[a].letter:=letter;
 	mobs[a].x:=x;
 	mobs[a].y:=y;
-	mobs[a].hp:=hp;
-	mobs[a].damage:=damage;
-	mobs[a].speed:=speed;
+	mobs[a].hp:=species[number].maxHp;
 end;
 procedure draw();
 var i,j:integer;
@@ -94,7 +97,7 @@ begin
 	if (high(mobs)>=0) then
 	for counter:=0 to high(mobs) do begin
 		gotoxy(mobs[counter].x,mobs[counter].y);
-		write(mobs[counter].letter);
+		write(species[mobs[counter].number].letter);
 	end;
 ///////////////////
 	if (isMoneyChanged) then begin textbackground(0); textcolor(7); gotoxy(17,24); write(money:3); isMoneyChanged:=false; end;
@@ -121,7 +124,7 @@ var a:Integer;
 begin
 	if (high(mobs)>=0) then
 	for counter:=0 to high(mobs) do begin
-		if (map[mobs[counter].x,mobs[counter].y]='ฐ') then begin decHP(mobs[counter].damage); removeMob(counter) end;
+		if (map[mobs[counter].x,mobs[counter].y]='ฐ') then begin decHP(species[mobs[counter].number].damage); removeMob(counter) end;
 		if (mobs[counter].x<30) then begin
 			a:=high(toRedraw);
 			setlength(toRedraw,a + 2);
@@ -133,6 +136,10 @@ begin
 	end;
 	lastUpdate:=now;
 end;
+////////////////////
+////////////////////
+////////////////////
+
 begin
 	clrscr;
 	assign(input, '1.map'); reset(input);
@@ -145,8 +152,13 @@ begin
 	InitKeyBoard;
 	hp:=200;
 	money:=100;
-	spawnMob('W',3,12,1,2,3);
-	spawnMob('',1,8,1,2,3);
+	setlength(species,1);
+	species[0].letter:='W';
+	species[0].maxHp:=200;
+	species[0].speed:=10;
+	species[0].damage:=10;
+	spawnMob(0,3,12);
+	spawnMob(0,1,8);
 gotoxy(1,22);
 write('ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ');
 gotoxy(2,24); write('HP: ',hp:3,'     $: ',money:3);
@@ -169,7 +181,7 @@ repeat
 		end;
 	end;
 	if (MilliSecondsBetween(lastRedraw,now)>40) then draw();
-	if (MilliSecondsBetween(lastUpdate,now)>40) then update();
+	if (MilliSecondsBetween(lastUpdate,now)>600) then update();
 Until (GetKeyEventChar(K)='q');
 DoneKeyBoard;
 end.
