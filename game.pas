@@ -1,5 +1,5 @@
 program game;
-uses crt, keyboard;
+uses crt,keyboard,sysutils,DateUtils;
 type
 	coord = 1..30;
 	mob = record
@@ -25,6 +25,8 @@ mobs: array of mob;
 K : TKeyEvent;
 input: file of char;
 toRedraw: array of dot;
+//TIMERS
+lastRedraw,lastUpdate: TDateTime;
 procedure frite(tclr,bclr:byte; text:string);
 begin
 	textcolor(tclr);
@@ -36,19 +38,11 @@ begin
 	if (val=' ') or (val='f') then isAvailable:=true
 	else isAvailable:=false;
 end;
-procedure removeMob(var a: array of mob; n: integer);
+procedure removeMob(n: integer);
 var i:byte;
 begin
-  for i := n to 99 do
-    a[i] := a[i+1];
-    with (a[100]) do
-    begin
-    	x:= 1;
-    	y:= 1;
-    	hp:= 0;
-    	damage:= 0;
-    	speed:= 0;
-    end;
+	if (n<high(mobs)) then for i:= n to high(mobs)-1 do mobs[i]:= mobs[i+1];
+	//setlength(mobs,high(mobs));
 end;
 procedure spawnMob(letter:char; x,y:coord; hp:integer; damage,speed:byte);
 var a:Integer;
@@ -106,6 +100,7 @@ begin
 	if (isMoneyChanged) then begin textbackground(0); textcolor(7); gotoxy(17,24); write(money:3); isMoneyChanged:=false; end;
 	if (isHpChanged) then begin textbackground(0); textcolor(7); gotoxy(6,24); write(hp:3);	isHpChanged:=false; end;
 	gotoxy(x,y);
+	lastRedraw:=now;
 end;
 procedure gameOver();
 begin
@@ -126,7 +121,7 @@ var a:Integer;
 begin
 	if (high(mobs)>=0) then
 	for counter:=0 to high(mobs) do begin
-		if (map[mobs[counter].x,mobs[counter].y]='ฐ') then begin decHP(10); end;
+		if (map[mobs[counter].x,mobs[counter].y]='ฐ') then begin decHP(mobs[counter].damage); removeMob(counter) end;
 		if (mobs[counter].x<30) then begin
 			a:=high(toRedraw);
 			setlength(toRedraw,a + 2);
@@ -136,6 +131,7 @@ begin
 			mobs[counter].x:=mobs[counter].x+1;
 		end;
 	end;
+	lastUpdate:=now;
 end;
 begin
 	clrscr;
@@ -149,11 +145,13 @@ begin
 	InitKeyBoard;
 	hp:=200;
 	money:=100;
+	spawnMob('W',3,12,1,2,3);
 	spawnMob('',1,8,1,2,3);
 gotoxy(1,22);
 write('ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ');
 gotoxy(2,24); write('HP: ',hp:3,'     $: ',money:3);
 x:=1; y:=1;
+lastUpdate:=now; lastRedraw:=now;
 repeat
 	if KeyPressed then begin
 		K:=GetKeyEvent;
@@ -170,9 +168,8 @@ repeat
 		//'g': gameOver();
 		end;
 	end;
-	draw();
-	update();
-	delay(400);
+	if (MilliSecondsBetween(lastRedraw,now)>40) then draw();
+	if (MilliSecondsBetween(lastUpdate,now)>40) then update();
 Until (GetKeyEventChar(K)='q');
 DoneKeyBoard;
 end.
