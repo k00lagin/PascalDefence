@@ -18,6 +18,18 @@ type
 		damage: word;
 		speed: byte;
 	end;
+	tower = record
+		x : coord;
+		y : coord;
+		number : byte;
+		lastShoot: TDateTime;
+	end;
+	kind = record
+		letter : char;
+		damage : word;
+		range : byte;
+		cooldown : word;
+	end;
 var a:char;
 b:integer;
 x,y,i,j,f,counter:shortint;
@@ -33,6 +45,8 @@ toRedraw: array of dot;
 lastRedraw,lastUpdate: TDateTime;
 /////
 species: array of specie;
+towers: array of tower;
+kinds: array of kind;
 procedure frite(tclr,bclr:byte; text:string);
 begin
 	textcolor(tclr);
@@ -97,7 +111,17 @@ begin
 	if (high(mobs)>=0) then
 	for counter:=0 to high(mobs) do begin
 		gotoxy(mobs[counter].x,mobs[counter].y);
-		write(species[mobs[counter].number].letter);
+		if (mobs[counter].hp=species[mobs[counter].number].maxHp) then frite(8,7,species[mobs[counter].number].letter)
+		else if (mobs[counter].hp / species[mobs[counter].number].maxHp > 0.8) then frite(10,7,species[mobs[counter].number].letter)
+		else if (mobs[counter].hp / species[mobs[counter].number].maxHp > 0.6) then frite(2, 7,species[mobs[counter].number].letter)
+		else if (mobs[counter].hp / species[mobs[counter].number].maxHp > 0.4) then frite(14,7,species[mobs[counter].number].letter)
+		else if (mobs[counter].hp / species[mobs[counter].number].maxHp > 0.2) then frite(12,7,species[mobs[counter].number].letter)
+		else frite(4,7,species[mobs[counter].number].letter);
+	end;
+	if (high(towers)>=0) then
+	for counter:=0 to high(towers) do begin
+		gotoxy(towers[counter].x,towers[counter].y);
+		frite(8,7,kinds[towers[counter].number].letter)
 	end;
 ///////////////////
 	if (isMoneyChanged) then begin textbackground(0); textcolor(7); gotoxy(17,24); write(money:3); isMoneyChanged:=false; end;
@@ -120,7 +144,7 @@ begin
 	if (hp=0) then gameOver;
 end;
 procedure update();
-var a:Integer;
+var a,i,j:Integer;
 begin
 	if (high(mobs)>=0) then
 	for counter:=0 to high(mobs) do begin
@@ -133,6 +157,17 @@ begin
 			toRedraw[a].y:=mobs[counter].y;
 			mobs[counter].x:=mobs[counter].x+1;
 		end;
+	end;
+	if (high(towers)>=0) then
+	for i:=0 to high(towers) do
+		for j:=0 to high(mobs) do begin
+			if (MilliSecondsBetween(towers[i].lastShoot,now)>=kinds[towers[i].number].cooldown) then
+			if ((abs(towers[i].x - mobs[j].x) <= kinds[towers[i].number].range) and (abs(towers[i].y - mobs[j].y) <= kinds[towers[i].number].range)) then begin
+				if (mobs[j].hp>=kinds[towers[i].number].damage) then mobs[j].hp:=mobs[j].hp - kinds[towers[i].number].damage
+				else mobs[j].hp:= 0;
+				towers[i].lastShoot:=now;
+				break;
+			end;
 	end;
 	lastUpdate:=now;
 end;
@@ -157,6 +192,20 @@ begin
 	species[0].maxHp:=200;
 	species[0].speed:=10;
 	species[0].damage:=10;
+	setlength(kinds,1);
+	kinds[0].letter:='H';
+	kinds[0].damage:=10;
+	kinds[0].range:=2;
+	kinds[0].cooldown:=400;
+	setlength(towers,2);
+	towers[0].x:=8;
+	towers[0].y:=7;
+	towers[0].number:=0;
+	towers[0].lastShoot:=now;
+	towers[1].x:=16;
+	towers[1].y:=9;
+	towers[1].number:=0;
+	towers[1].lastShoot:=now;
 	spawnMob(0,3,12);
 	spawnMob(0,1,8);
 gotoxy(1,22);
