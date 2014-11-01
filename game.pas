@@ -29,6 +29,7 @@ type
 		damage : word;
 		range : byte;
 		cooldown : word;
+		price : byte;
 	end;
 var a:char;
 b:integer;
@@ -55,7 +56,7 @@ begin
 end;
 function isAvailable(val:char):Boolean;
 begin
-	if (val=' ') or (val='f') then isAvailable:=true
+	if (val=' ') or (val='f') or (val='b') then isAvailable:=true
 	else isAvailable:=false;
 end;
 procedure removeMob(n: integer);
@@ -86,9 +87,16 @@ begin
 	towers[a].lastShoot:=now;
 	map[x,y]:=kinds[number].letter;
 end;
-procedure destroyTower(n: integer);
-var i:byte;
+procedure destroyTower(x,y: coord);
+var i,j:byte;
 begin
+	if (high(towers)>=0) then
+	for i:=high(towers) downto 0 do if ((towers[i].x=x) and (towers[i].y=y)) then begin
+		map[x,y]:='b';
+		if (i<high(towers)) then for j:= i to high(towers)-1 do towers[j]:= towers[j+1];
+		setlength(towers,high(towers));
+		money:=money+10; isMoneyChanged:=true;
+	end;
 end;
 procedure draw();
 var i,j:integer;
@@ -104,6 +112,7 @@ begin
 	  			's': frite(15,6,'°');  //sand
 	  			'h': frite(2,7,'h');  //small tower
 	  			'H': frite(2,7,'H');  //big tower
+	 	    	'b': frite(8,6,'°'); //black ground
 	  			'²','±','°': begin if odd(i) then frite(8,7,'Ü') else frite(8,7,'ß'); end //exit,entrance,path
 	  			else frite(7,0,map[i,j]);
 	  		end;
@@ -117,6 +126,7 @@ begin
 	    	's': frite(15,6,'°');  //sand
 	    	'h': frite(2,7,'h');  //small tower
 	    	'H': frite(2,7,'H');  //big tower
+	    	'b': frite(8,6,'°'); //black ground
 	    	'²','±','°': begin if odd(toRedraw[i].x) then frite(8,7,'Ü') else frite(8,7,'ß'); end //exit,entrance,path
 	    	else frite(7,0,map[toRedraw[i].x,toRedraw[i].y]);
 	    end;
@@ -239,8 +249,9 @@ repeat
 		'w': if (y>1) then y:=y-1;
 		'h': if ((money>=10) and isAvailable(map[x,y])) then begin buildTower(0,x,y); isMoneyChanged:=true; money:=money-10; end;
 		'j': if ((money>=20) and isAvailable(map[x,y])) then begin buildTower(1,x,y); isMoneyChanged:=true; money:=money-20; end;
-		'k': map[x,y]:='0';
-		'l': map[x,y]:='1';
+		'k': map[x,y]:=' ';
+		'l': map[x,y]:='f';
+		'p': destroyTower(x,y);
 		//'g': gameOver();
 		end;
 	end;
