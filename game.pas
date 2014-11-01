@@ -59,10 +59,10 @@ begin
 	else isAvailable:=false;
 end;
 procedure removeMob(n: integer);
-var i:byte;
+var i:integer;
 begin
 	if (n<high(mobs)) then for i:= n to high(mobs)-1 do mobs[i]:= mobs[i+1];
-	//setlength(mobs,high(mobs));
+	setlength(mobs,high(mobs));
 end;
 procedure spawnMob(number:byte; x,y:coord);
 var a:Integer;
@@ -72,7 +72,23 @@ begin
 	inc(a);
 	mobs[a].x:=x;
 	mobs[a].y:=y;
+	mobs[a].number:=number;
 	mobs[a].hp:=species[number].maxHp;
+end;
+procedure buildTower(number:byte; x,y:coord);
+var a:Integer;
+begin
+	a:=Length(towers);
+	setlength(towers,a + 1);
+	towers[a].x:=x;
+	towers[a].y:=y;
+	towers[a].number:=number;
+	towers[a].lastShoot:=now;
+	map[x,y]:=kinds[number].letter;
+end;
+procedure destroyTower(n: integer);
+var i:byte;
+begin
 end;
 procedure draw();
 var i,j:integer;
@@ -118,11 +134,11 @@ begin
 		else if (mobs[counter].hp / species[mobs[counter].number].maxHp > 0.2) then frite(12,7,species[mobs[counter].number].letter)
 		else frite(4,7,species[mobs[counter].number].letter);
 	end;
-	if (high(towers)>=0) then
+{	if (high(towers)>=0) then
 	for counter:=0 to high(towers) do begin
 		gotoxy(towers[counter].x,towers[counter].y);
 		frite(8,7,kinds[towers[counter].number].letter)
-	end;
+	end;}
 ///////////////////
 	if (isMoneyChanged) then begin textbackground(0); textcolor(7); gotoxy(17,24); write(money:3); isMoneyChanged:=false; end;
 	if (isHpChanged) then begin textbackground(0); textcolor(7); gotoxy(6,24); write(hp:3);	isHpChanged:=false; end;
@@ -147,8 +163,7 @@ procedure update();
 var a,i,j:Integer;
 begin
 	if (high(mobs)>=0) then
-	for counter:=0 to high(mobs) do begin
-		if (map[mobs[counter].x,mobs[counter].y]='ฐ') then begin decHP(species[mobs[counter].number].damage); removeMob(counter) end;
+	for counter:=high(mobs) downto 0 do begin
 		if (mobs[counter].x<30) then begin
 			a:=high(toRedraw);
 			setlength(toRedraw,a + 2);
@@ -157,6 +172,8 @@ begin
 			toRedraw[a].y:=mobs[counter].y;
 			mobs[counter].x:=mobs[counter].x+1;
 		end;
+		if (map[mobs[counter].x,mobs[counter].y]='ฐ') then begin decHP(species[mobs[counter].number].damage); removeMob(counter); end
+		else if (mobs[counter].hp=0) then begin money:=money+10; isMoneyChanged:=true; removeMob(counter); end;
 	end;
 	if (high(towers)>=0) then
 	for i:=0 to high(towers) do
@@ -169,6 +186,7 @@ begin
 				break;
 			end;
 	end;
+	if (random(100)<=10) then spawnMob(0,1,8);
 	lastUpdate:=now;
 end;
 ////////////////////
@@ -192,21 +210,18 @@ begin
 	species[0].maxHp:=200;
 	species[0].speed:=10;
 	species[0].damage:=10;
-	setlength(kinds,1);
-	kinds[0].letter:='H';
-	kinds[0].damage:=10;
-	kinds[0].range:=2;
-	kinds[0].cooldown:=400;
-	setlength(towers,2);
-	towers[0].x:=8;
-	towers[0].y:=7;
-	towers[0].number:=0;
-	towers[0].lastShoot:=now;
-	towers[1].x:=16;
-	towers[1].y:=9;
-	towers[1].number:=0;
-	towers[1].lastShoot:=now;
-	spawnMob(0,3,12);
+	setlength(kinds,2);
+	kinds[0].letter:='h';
+	kinds[0].damage:=5;
+	kinds[0].range:=1;
+	kinds[0].cooldown:=200;
+	kinds[1].letter:='H';
+	kinds[1].damage:=15;
+	kinds[1].range:=2;
+	kinds[1].cooldown:=600;
+	//buildTower(0,8,7);
+	//buildTower(0,16,9);
+	//buildTower(0,20,7);
 	spawnMob(0,1,8);
 gotoxy(1,22);
 write('ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ');
@@ -222,15 +237,15 @@ repeat
 		'a': if (x>1) then x:=x-1;
 		's': if (y<20) then y:=y+1;
 		'w': if (y>1) then y:=y-1;
-		'h': if ((money>=10) and isAvailable(map[x,y])) then begin map[x,y]:='h'; isMoneyChanged:=true; money:=money-10; end;
-		'j': if ((money>=20) and isAvailable(map[x,y])) then begin map[x,y]:='H'; isMoneyChanged:=true; money:=money-20; end;
+		'h': if ((money>=10) and isAvailable(map[x,y])) then begin buildTower(0,x,y); isMoneyChanged:=true; money:=money-10; end;
+		'j': if ((money>=20) and isAvailable(map[x,y])) then begin buildTower(1,x,y); isMoneyChanged:=true; money:=money-20; end;
 		'k': map[x,y]:='0';
 		'l': map[x,y]:='1';
 		//'g': gameOver();
 		end;
 	end;
 	if (MilliSecondsBetween(lastRedraw,now)>40) then draw();
-	if (MilliSecondsBetween(lastUpdate,now)>600) then update();
+	if (MilliSecondsBetween(lastUpdate,now)>300) then update();
 Until (GetKeyEventChar(K)='q');
 DoneKeyBoard;
 end.
