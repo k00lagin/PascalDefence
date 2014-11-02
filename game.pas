@@ -86,6 +86,8 @@ begin
 	towers[a].number:=number;
 	towers[a].lastShoot:=now;
 	map[x,y]:=kinds[number].letter;
+	isMoneyChanged:=true;
+	money:=money - kinds[towers[a].number].price;
 end;
 procedure destroyTower(x,y: coord);
 var i,j:byte;
@@ -93,9 +95,10 @@ begin
 	if (high(towers)>=0) then
 	for i:=high(towers) downto 0 do if ((towers[i].x=x) and (towers[i].y=y)) then begin
 		map[x,y]:='b';
+		isMoneyChanged:=true;
+		money:=money + kinds[towers[i].number].price div 2;
 		if (i<high(towers)) then for j:= i to high(towers)-1 do towers[j]:= towers[j+1];
 		setlength(towers,high(towers));
-		money:=money+10; isMoneyChanged:=true;
 	end;
 end;
 procedure draw();
@@ -225,10 +228,12 @@ begin
 	kinds[0].damage:=5;
 	kinds[0].range:=1;
 	kinds[0].cooldown:=200;
+	kinds[0].price:=10;
 	kinds[1].letter:='H';
 	kinds[1].damage:=15;
 	kinds[1].range:=2;
 	kinds[1].cooldown:=600;
+	kinds[1].price:=20;
 	//buildTower(0,8,7);
 	//buildTower(0,16,9);
 	//buildTower(0,20,7);
@@ -247,8 +252,8 @@ repeat
 		'a': if (x>1) then x:=x-1;
 		's': if (y<20) then y:=y+1;
 		'w': if (y>1) then y:=y-1;
-		'h': if ((money>=10) and isAvailable(map[x,y])) then begin buildTower(0,x,y); isMoneyChanged:=true; money:=money-10; end;
-		'j': if ((money>=20) and isAvailable(map[x,y])) then begin buildTower(1,x,y); isMoneyChanged:=true; money:=money-20; end;
+		'h': if ((money>=10) and isAvailable(map[x,y])) then begin buildTower(0,x,y); end;
+		'j': if ((money>=20) and isAvailable(map[x,y])) then begin buildTower(1,x,y); end;
 		'k': map[x,y]:=' ';
 		'l': map[x,y]:='f';
 		'p': destroyTower(x,y);
