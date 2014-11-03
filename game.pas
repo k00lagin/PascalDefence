@@ -8,6 +8,7 @@ type
 		dir: byte;
 		hp : integer;
 		number: byte;
+		lastStep : TDateTime;
 	end;
 	dot = record
 		x : coord;
@@ -17,7 +18,7 @@ type
 		letter : char;
 		maxHp: word;
 		damage: word;
-		speed: byte;
+		stepDelay: word;
 		reward : byte;
 	end;
 	tower = record
@@ -67,8 +68,10 @@ begin
 	else isAvailable:=false;
 end;
 procedure removeMob(n: integer);
-var i:integer;
+var i,a:integer; x,y:coord;
 begin
+	x:=mobs[n].x; y:=mobs[n].y;
+	a:=high(toRedraw); setlength(toRedraw,a + 2); inc(a); toRedraw[a].x:=x; toRedraw[a].y:=y;
 	if (n<high(mobs)) then for i:= n to high(mobs)-1 do mobs[i]:= mobs[i+1];
 	setlength(mobs,high(mobs));
 end;
@@ -82,6 +85,7 @@ begin
 	mobs[a].y:=spawnPoints[point].y;
 	mobs[a].dir:=spawnPoints[point].dir;
 	mobs[a].number:=number;
+	mobs[a].lastStep:=now;
 	mobs[a].hp:=species[number].maxHp;
 end;
 procedure buildTower(number:byte; x,y:coord);
@@ -180,7 +184,7 @@ var a,i,j:Integer;
 begin
 	if (high(mobs)>=0) then
 	for counter:=high(mobs) downto 0 do begin
-		if (mobs[counter].x<30) then begin
+		if (MilliSecondsBetween(mobs[counter].lastStep,now)>species[mobs[counter].number].stepDelay) then begin
 			a:=high(toRedraw);
 			setlength(toRedraw,a + 2);
 			inc(a);
@@ -198,9 +202,9 @@ begin
 				2: mobs[counter].x:=mobs[counter].x-1;
 				3: mobs[counter].y:=mobs[counter].y+1;
 			end;
+			mobs[counter].lastStep:=now;
 		end;
-		if (map[mobs[counter].x,mobs[counter].y]='°') then begin decHP(species[mobs[counter].number].damage); removeMob(counter); end
-		else if (mobs[counter].hp=0) then begin money:=money+10; isMoneyChanged:=true; removeMob(counter); end;
+		if (map[mobs[counter].x,mobs[counter].y]='°') then begin decHP(species[mobs[counter].number].damage); removeMob(counter); end;
 	end;
 	if (high(towers)>=0) then
 	for i:=0 to high(towers) do
@@ -209,11 +213,12 @@ begin
 			if ((abs(towers[i].x - mobs[j].x) <= kinds[towers[i].number].range) and (abs(towers[i].y - mobs[j].y) <= kinds[towers[i].number].range)) then begin
 				if (mobs[j].hp>=kinds[towers[i].number].damage) then mobs[j].hp:=mobs[j].hp - kinds[towers[i].number].damage
 				else mobs[j].hp:= 0;
+				if (mobs[j].hp=0) then begin money:=money+10; isMoneyChanged:=true; removeMob(j); end;
 				towers[i].lastShoot:=now;
 				break;
 			end;
 	end;
-	if (random(100)<=10) then spawnMob(0,0);
+	if (random(1400)<=15) then if (random(10)<2) then spawnMob(1,0) else spawnMob(0,0);
 	lastUpdate:=now;
 end;
 ////////////////////
@@ -241,11 +246,15 @@ begin
 	InitKeyBoard;
 	hp:=200;
 	money:=100;
-	setlength(species,1);
+	setlength(species,2);
 	species[0].letter:='W';
 	species[0].maxHp:=200;
-	species[0].speed:=10;
+	species[0].stepDelay:=400;
 	species[0].damage:=10;
+	species[1].letter:='S';
+	species[1].maxHp:=160;
+	species[1].stepDelay:=100;
+	species[1].damage:=10;
 	setlength(kinds,2);
 	kinds[0].letter:='h';
 	kinds[0].damage:=5;
@@ -281,7 +290,7 @@ repeat
 		end;
 	end;
 	if (MilliSecondsBetween(lastRedraw,now)>40) then draw();
-	if (MilliSecondsBetween(lastUpdate,now)>300) then update();
+	if (MilliSecondsBetween(lastUpdate,now)>40) then update();
 Until (GetKeyEventChar(K)='q');
 DoneKeyBoard;
 end.
