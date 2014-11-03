@@ -228,19 +228,20 @@ end;
 begin
 	clrscr;
 	assign(input, '1.map'); reset(input);
-	for j:=1 to 20 do
-	for i:= 1 to 30 do begin
-		read(input,map[i,j]);
-		if (map[i,j]=#13) then read(input,map[i,j],map[i,j]);
-		if (map[i,j]='²') then begin
-			setlength(spawnPoints,Length(spawnPoints)+1);
-			spawnPoints[high(spawnPoints)].x:=i;
-			spawnPoints[high(spawnPoints)].y:=j;
-			if (i= 1) then spawnPoints[high(spawnPoints)].dir:=0
-			else if (j=20) then spawnPoints[high(spawnPoints)].dir:=1
-			else if (i=30) then spawnPoints[high(spawnPoints)].dir:=2
-			else if (j= 1) then spawnPoints[high(spawnPoints)].dir:=3;
+	for j:=1 to 20 do begin
+		for i:= 1 to 30 do begin
+			read(input,map[i,j]);
+			if (map[i,j]='²') then begin
+				setlength(spawnPoints,Length(spawnPoints)+1);
+				spawnPoints[high(spawnPoints)].x:=i;
+				spawnPoints[high(spawnPoints)].y:=j;
+				if (i= 1) then spawnPoints[high(spawnPoints)].dir:=0
+				else if (j=20) then spawnPoints[high(spawnPoints)].dir:=1
+				else if (i=30) then spawnPoints[high(spawnPoints)].dir:=2
+				else if (j= 1) then spawnPoints[high(spawnPoints)].dir:=3;
+			end;
 		end;
+		//read(input,map[i,j],map[i,j]);
 	end;
 	close(input);
 	InitKeyBoard;
