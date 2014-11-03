@@ -5,6 +5,7 @@ type
 	mob = record
 		x : coord;
 		y : coord;
+		dir: byte;
 		hp : integer;
 		number: byte;
 	end;
@@ -17,6 +18,7 @@ type
 		maxHp: word;
 		damage: word;
 		speed: byte;
+		reward : byte;
 	end;
 	tower = record
 		x : coord;
@@ -30,6 +32,10 @@ type
 		range : byte;
 		cooldown : word;
 		price : byte;
+	end;
+	spawnPoint = record
+		x,y : coord;
+		dir : byte;
 	end;
 var a:char;
 b:integer;
@@ -48,6 +54,7 @@ lastRedraw,lastUpdate: TDateTime;
 species: array of specie;
 towers: array of tower;
 kinds: array of kind;
+spawnPoints: array of spawnPoint;
 procedure frite(tclr,bclr:byte; text:string);
 begin
 	textcolor(tclr);
@@ -65,14 +72,15 @@ begin
 	if (n<high(mobs)) then for i:= n to high(mobs)-1 do mobs[i]:= mobs[i+1];
 	setlength(mobs,high(mobs));
 end;
-procedure spawnMob(number:byte; x,y:coord);
+procedure spawnMob(number,point:byte);
 var a:Integer;
 begin
 	a:=high(mobs);
 	setlength(mobs,a + 2);
 	inc(a);
-	mobs[a].x:=x;
-	mobs[a].y:=y;
+	mobs[a].x:=spawnPoints[point].x;
+	mobs[a].y:=spawnPoints[point].y;
+	mobs[a].dir:=spawnPoints[point].dir;
 	mobs[a].number:=number;
 	mobs[a].hp:=species[number].maxHp;
 end;
@@ -116,7 +124,7 @@ begin
 	  			'h': frite(2,7,'h');  //small tower
 	  			'H': frite(2,7,'H');  //big tower
 	 	    	'b': frite(8,6,'ฐ'); //black ground
-	  			'ฒ','ฑ','ฐ': begin if odd(i) then frite(8,7,'Ü') else frite(8,7,'฿'); end //exit,entrance,path
+	  			'ฒ','ฑ','ฐ','<','>','^','v': begin if odd(i) then frite(8,7,'Ü') else frite(8,7,'฿'); end //exit,entrance,path
 	  			else frite(7,0,map[i,j]);
 	  		end;
 	    end;
@@ -130,7 +138,7 @@ begin
 	    	'h': frite(2,7,'h');  //small tower
 	    	'H': frite(2,7,'H');  //big tower
 	    	'b': frite(8,6,'ฐ'); //black ground
-	    	'ฒ','ฑ','ฐ': begin if odd(toRedraw[i].x) then frite(8,7,'Ü') else frite(8,7,'฿'); end //exit,entrance,path
+	    	'ฒ','ฑ','ฐ','<','>','^','v': begin if odd(toRedraw[i].x) then frite(8,7,'Ü') else frite(8,7,'฿'); end //exit,entrance,path
 	    	else frite(7,0,map[toRedraw[i].x,toRedraw[i].y]);
 	    end;
 	    setlength(toRedraw,high(toRedraw));
@@ -147,11 +155,6 @@ begin
 		else if (mobs[counter].hp / species[mobs[counter].number].maxHp > 0.2) then frite(12,7,species[mobs[counter].number].letter)
 		else frite(4,7,species[mobs[counter].number].letter);
 	end;
-{	if (high(towers)>=0) then
-	for counter:=0 to high(towers) do begin
-		gotoxy(towers[counter].x,towers[counter].y);
-		frite(8,7,kinds[towers[counter].number].letter)
-	end;}
 ///////////////////
 	if (isMoneyChanged) then begin textbackground(0); textcolor(7); gotoxy(17,24); write(money:3); isMoneyChanged:=false; end;
 	if (isHpChanged) then begin textbackground(0); textcolor(7); gotoxy(6,24); write(hp:3);	isHpChanged:=false; end;
@@ -183,7 +186,18 @@ begin
 			inc(a);
 			toRedraw[a].x:=mobs[counter].x;
 			toRedraw[a].y:=mobs[counter].y;
-			mobs[counter].x:=mobs[counter].x+1;
+			case map[mobs[counter].x,mobs[counter].y] of
+				'>': mobs[counter].dir:=0;
+				'^': mobs[counter].dir:=1;
+				'<': mobs[counter].dir:=2;
+				'v': mobs[counter].dir:=3;
+			end;
+			case mobs[counter].dir of
+				0: mobs[counter].x:=mobs[counter].x+1;
+				1: mobs[counter].y:=mobs[counter].y-1;
+				2: mobs[counter].x:=mobs[counter].x-1;
+				3: mobs[counter].y:=mobs[counter].y+1;
+			end;
 		end;
 		if (map[mobs[counter].x,mobs[counter].y]='ฐ') then begin decHP(species[mobs[counter].number].damage); removeMob(counter); end
 		else if (mobs[counter].hp=0) then begin money:=money+10; isMoneyChanged:=true; removeMob(counter); end;
@@ -199,7 +213,7 @@ begin
 				break;
 			end;
 	end;
-	if (random(100)<=10) then spawnMob(0,1,8);
+	if (random(100)<=10) then spawnMob(0,0);
 	lastUpdate:=now;
 end;
 ////////////////////
@@ -213,6 +227,15 @@ begin
 	for i:= 1 to 30 do begin
 		read(input,map[i,j]);
 		if (map[i,j]=#13) then read(input,map[i,j],map[i,j]);
+		if (map[i,j]='ฒ') then begin
+			setlength(spawnPoints,Length(spawnPoints)+1);
+			spawnPoints[high(spawnPoints)].x:=i;
+			spawnPoints[high(spawnPoints)].y:=j;
+			if (i= 1) then spawnPoints[high(spawnPoints)].dir:=0
+			else if (j=20) then spawnPoints[high(spawnPoints)].dir:=1
+			else if (i=30) then spawnPoints[high(spawnPoints)].dir:=2
+			else if (j= 1) then spawnPoints[high(spawnPoints)].dir:=3;
+		end;
 	end;
 	close(input);
 	InitKeyBoard;
@@ -234,10 +257,7 @@ begin
 	kinds[1].range:=2;
 	kinds[1].cooldown:=600;
 	kinds[1].price:=20;
-	//buildTower(0,8,7);
-	//buildTower(0,16,9);
-	//buildTower(0,20,7);
-	spawnMob(0,1,8);
+	spawnMob(0,0);
 gotoxy(1,22);
 write('ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ');
 gotoxy(2,24); write('HP: ',hp:3,'     $: ',money:3);
