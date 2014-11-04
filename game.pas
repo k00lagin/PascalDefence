@@ -40,7 +40,7 @@ type
 	end;
 var a:char;
 b:integer;
-x,y,i,j,f,counter:shortint;
+x,y,tx,ty,i,j,f,counter:shortint;
 map,prevmap: array[1..30,1..20] of char;
 money:Longint;
 hp:Byte;
@@ -119,7 +119,7 @@ begin
 	for i:=1 to 30 do
 	  for j:=1 to 20 do
 	  	if (map[i,j]<>prevmap[i,j])  then begin
-	  		gotoxy(i,j);
+	  		gotoxy(i+tx,j+ty);
 	  		case map[i,j] of
 	  			' ': frite(0,15,' ');
 	  			'f': frite(10,2,'ฐ');  //field
@@ -133,7 +133,7 @@ begin
 	  		end;
 	    end;
 	 for i:=high(toRedraw) downto 0 do begin
-	 	gotoxy(toRedraw[i].x,toRedraw[i].y);
+	 	gotoxy(toRedraw[i].x+tx,toRedraw[i].y+ty);
 	    case map[toRedraw[i].x,toRedraw[i].y] of
 	    	' ': frite(0,15,' ');
 	    	'f': frite(10,2,'ฐ');  //field
@@ -151,7 +151,7 @@ begin
 ///////////////////
 	if (high(mobs)>=0) then
 	for counter:=0 to high(mobs) do begin
-		gotoxy(mobs[counter].x,mobs[counter].y);
+		gotoxy(mobs[counter].x+tx,mobs[counter].y+ty);
 		if (mobs[counter].hp=species[mobs[counter].number].maxHp) then frite(8,7,species[mobs[counter].number].letter)
 		else if (mobs[counter].hp / species[mobs[counter].number].maxHp > 0.8) then frite(10,7,species[mobs[counter].number].letter)
 		else if (mobs[counter].hp / species[mobs[counter].number].maxHp > 0.6) then frite(2, 7,species[mobs[counter].number].letter)
@@ -160,9 +160,9 @@ begin
 		else frite(4,7,species[mobs[counter].number].letter);
 	end;
 ///////////////////
-	if (isMoneyChanged) then begin textbackground(0); textcolor(7); gotoxy(17,24); write(money:3); isMoneyChanged:=false; end;
-	if (isHpChanged) then begin textbackground(0); textcolor(7); gotoxy(6,24); write(hp:3);	isHpChanged:=false; end;
-	gotoxy(x,y);
+	if (isMoneyChanged) then begin textcolor(0); textbackground(7); gotoxy(20,25); write(money:3); isMoneyChanged:=false; end;
+	if (isHpChanged) then begin textcolor(0); textbackground(7); gotoxy(8,25); write(hp:3);	isHpChanged:=false; end;
+	gotoxy(x+tx,y+ty);
 	lastRedraw:=now;
 end;
 procedure gameOver();
@@ -226,7 +226,21 @@ end;
 ////////////////////
 
 begin
+	window(1,1,80,25);
 	clrscr;
+	gotoxy(1,25); textcolor(8); textbackground(7); write('ÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ');
+	//gotoxy(80,25); write('Û',#13);
+	tx:=25; ty:=2;
+	gotoxy(1,1); textcolor(8); textbackground(7); write('ÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ');
+	gotoxy(49,1); write('ÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ');
+	for j:=2 to 24 do begin
+		gotoxy(1,j);
+		frite(8,0,'Û');
+		gotoxy(80,j);
+		frite(8,0,'Û');
+	end;
+	
+	gotoxy(33,1); textcolor(0); textbackground(7); write(' Pascal Defence ');
 	assign(input, '1.map'); reset(input);
 	for j:=1 to 20 do begin
 		for i:= 1 to 30 do begin
@@ -268,9 +282,11 @@ begin
 	kinds[1].cooldown:=600;
 	kinds[1].price:=20;
 	spawnMob(0,0);
-gotoxy(1,22);
-write('ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ');
-gotoxy(2,24); write('HP: ',hp:3,'     $: ',money:3);
+//gotoxy(1,22);
+//write('ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ');
+gotoxy(3,25); write(' HP:     ');
+gotoxy(16,25); write(' $:     ');
+isMoneyChanged:=true; isHpChanged:=true;
 x:=1; y:=1;
 lastUpdate:=now; lastRedraw:=now;
 repeat
