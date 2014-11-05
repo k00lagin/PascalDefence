@@ -33,6 +33,7 @@ type
 		range : byte;
 		cooldown : word;
 		price : byte;
+		next : byte;
 	end;
 	spawnPoint = record
 		x,y : coord;
@@ -89,18 +90,57 @@ begin
 	mobs[a].lastStep:=now;
 	mobs[a].hp:=species[number].maxHp;
 end;
+procedure updateInfo();
+var i:word;
+begin
+	case map[x,y] of
+	'h','H','t','T': begin
+		textcolor(7);
+		textbackground(0);
+		for i:=high(towers) downto 0 do if ((towers[i].x=x) and (towers[i].y=y)) then begin
+			gotoxy(65,5);
+			write('  Tower    ');
+			gotoxy(65,7);
+			write('Range:    ',kinds[towers[i].number].range:1);
+			gotoxy(65,9);
+			write('DMG:    ',kinds[towers[i].number].damage:3);
+			gotoxy(65,11);
+			write('DLY:   ',kinds[towers[i].number].cooldown:4);
+		end;
+		gotoxy(65,13);
+		write('Upgrade:  U');
+	end
+	else begin
+		textcolor(7);
+		textbackground(0);
+		gotoxy(65,5);
+		write('Build tower');
+		gotoxy(65,7);
+		write(' Small:   H');
+		gotoxy(65,9);
+		write(' Big:     J');
+		gotoxy(65,11);
+		write('           ');
+		gotoxy(65,13);
+		write('           ');
+	end;
+	end;
+end;
 procedure buildTower(number:byte; x,y:coord);
 var a:Integer;
 begin
-	a:=Length(towers);
-	setlength(towers,a + 1);
-	towers[a].x:=x;
-	towers[a].y:=y;
-	towers[a].number:=number;
-	towers[a].lastShoot:=now;
-	map[x,y]:=kinds[number].letter;
-	isMoneyChanged:=true;
-	money:=money - kinds[towers[a].number].price;
+	if (money>=kinds[number].price) then begin
+		a:=Length(towers);
+		setlength(towers,a + 1);
+		towers[a].x:=x;
+		towers[a].y:=y;
+		towers[a].number:=number;
+		towers[a].lastShoot:=now;
+		map[x,y]:=kinds[number].letter;
+		isMoneyChanged:=true;
+		money:=money - kinds[towers[a].number].price;
+		if isInfoVis then updateInfo;
+	end;
 end;
 procedure destroyTower(x,y: coord);
 var i,j:byte;
@@ -112,22 +152,38 @@ begin
 		money:=money + kinds[towers[i].number].price div 2;
 		if (i<high(towers)) then for j:= i to high(towers)-1 do towers[j]:= towers[j+1];
 		setlength(towers,high(towers));
+		if isInfoVis then updateInfo;
+	end;
+end;
+procedure upgradeTower(x,y: coord);
+var i,j:byte;
+begin
+	if (high(towers)>=0) then
+	for i:=high(towers) downto 0 do if ((towers[i].x=x) and (towers[i].y=y)) then begin
+		if (towers[i].x=x) and (towers[i].y=y) and (money>=kinds[kinds[towers[i].number].next].price) and (kinds[towers[i].number].next>0) then 
+		begin
+			towers[i].number:=kinds[towers[i].number].next;
+			map[x,y]:=kinds[towers[i].number].letter;
+			isMoneyChanged:=true;
+			money:=money - kinds[towers[i].number].price;
+		end;
 	end;
 end;
 procedure drawInfo();
 var i:word;
 begin
-	for i:=2 to 24 do begin gotoxy(66,i); frite(8,0,'Û'); end;
+	for i:=2 to 24 do begin gotoxy(63,i); frite(8,0,'Û'); end;
 	textcolor(7);
 	textbackground(0);
-	gotoxy(68,3);
-	write('"P": pause');
+	gotoxy(65,3);
+	write('Pause:    P');
+	updateInfo();
 end;
 procedure hideInfo();
 var i:word;
 begin
 	//for i:=2 to 24 do begin gotoxy(66,i); frite(0,0,' '); end;
-	window(66,2,79,24);
+	window(63,2,79,24);
 	textbackground(0);
 	clrscr;
 	window(1,1,80,25);
@@ -144,8 +200,10 @@ begin
 	  			'f': frite(10,2,'ฐ');  //field
 	  			'#': frite(8,7,'#');  //rocks
 	  			's': frite(15,6,'ฐ');  //sand
-	  			'h': frite(2,7,'h');  //small tower
-	  			'H': frite(2,7,'H');  //big tower
+	    		'h': frite(6,7,'h');  //small tower
+	    		'H': frite(6,7,'H');  //big tower
+	    		't': frite(6,7,'t');  //small tower
+	    		'T': frite(6,7,'T');  //big tower
 	 	    	'b': frite(8,6,'ฐ'); //black ground
 	  			'ฒ','ฑ','ฐ','<','>','^','v': begin if odd(i) then frite(8,7,'Ü') else frite(8,7,'฿'); end //exit,entrance,path
 	  			else frite(7,0,map[i,j]);
@@ -158,8 +216,10 @@ begin
 	    	'f': frite(10,2,'ฐ');  //field
 	    	'#': frite(8,7,'#');  //rocks
 	    	's': frite(15,6,'ฐ');  //sand
-	    	'h': frite(2,7,'h');  //small tower
-	    	'H': frite(2,7,'H');  //big tower
+	    	'h': frite(6,7,'h');  //small tower
+	    	'H': frite(6,7,'H');  //big tower
+	    	't': frite(6,7,'t');  //small tower
+	    	'T': frite(6,7,'T');  //big tower
 	    	'b': frite(8,6,'ฐ'); //black ground
 	    	'ฒ','ฑ','ฐ','<','>','^','v': begin if odd(toRedraw[i].x) then frite(8,7,'Ü') else frite(8,7,'฿'); end //exit,entrance,path
 	    	else frite(7,0,map[toRedraw[i].x,toRedraw[i].y]);
@@ -292,17 +352,31 @@ begin
 	species[1].maxHp:=160;
 	species[1].stepDelay:=100;
 	species[1].damage:=10;
-	setlength(kinds,2);
-	kinds[0].letter:='h';
+	setlength(kinds,4);
+	kinds[0].letter:='t';
 	kinds[0].damage:=5;
-	kinds[0].range:=1;
-	kinds[0].cooldown:=200;
+	kinds[0].range:=2;
+	kinds[0].cooldown:=300;
 	kinds[0].price:=10;
-	kinds[1].letter:='H';
-	kinds[1].damage:=15;
+	kinds[0].next:=1;
+	kinds[1].letter:='T';
+	kinds[1].damage:=10;
 	kinds[1].range:=2;
-	kinds[1].cooldown:=600;
+	kinds[1].cooldown:=300;
 	kinds[1].price:=20;
+	kinds[1].next:=0;
+	kinds[2].letter:='h';
+	kinds[2].damage:=40;
+	kinds[2].range:=1;
+	kinds[2].cooldown:=1400;
+	kinds[2].price:=15;
+	kinds[2].next:=3;
+	kinds[3].letter:='H';
+	kinds[3].damage:=80;
+	kinds[3].range:=1;
+	kinds[3].cooldown:=1400;
+	kinds[3].price:=30;
+	kinds[3].next:=0;
 	spawnMob(0,0);
 //gotoxy(1,22);
 //write('ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ');
@@ -316,12 +390,13 @@ repeat
 		K:=GetKeyEvent;
 		K:=TranslateKeyEvent(K);
 		case GetKeyEventChar(K) of
-			'd','ข': if (x<30) then x:=x+1;
-			'a','ไ': if (x>1) then x:=x-1;
-			's','๋': if (y<20) then y:=y+1;
-			'w','ๆ': if (y>1) then y:=y-1;
-			'h','เ': if ((money>=10) and isAvailable(map[x,y])) then begin buildTower(0,x,y); end;
-			'j','ฎ': if ((money>=20) and isAvailable(map[x,y])) then begin buildTower(1,x,y); end;
+			'd','ข': if (x<30) then begin x:=x+1; if isInfoVis then updateInfo; end;
+			'a','ไ': if (x>1) then begin x:=x-1; if isInfoVis then updateInfo; end;
+			's','๋': if (y<20) then begin y:=y+1; if isInfoVis then updateInfo; end;
+			'w','ๆ': if (y>1) then begin y:=y-1; if isInfoVis then updateInfo; end;
+			'h','เ': if (isAvailable(map[x,y])) then begin buildTower(0,x,y); end;
+			'j','ฎ': if (isAvailable(map[x,y])) then begin buildTower(2,x,y); end;
+			'u','ฃ': upgradeTower(x,y);
 			'k','ซ': map[x,y]:=' ';
 			'l','ค': map[x,y]:='f';
 			'i','่': begin isInfoVis:=not isInfoVis; if isInfoVis then drawInfo else hideInfo; end;
