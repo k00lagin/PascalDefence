@@ -39,12 +39,13 @@ type
 		dir : byte;
 	end;
 var a:char;
+
 b:integer;
 x,y,tx,ty,i,j,f,counter:shortint;
 map,prevmap: array[1..30,1..20] of char;
 money:Longint;
 hp:Byte;
-isHpChanged,isMoneyChanged:Boolean;
+isHpChanged,isMoneyChanged,paused,isPauseChanged,isInfoVis:Boolean;
 mobs: array of mob;
 K : TKeyEvent;
 input: file of char;
@@ -113,6 +114,24 @@ begin
 		setlength(towers,high(towers));
 	end;
 end;
+procedure drawInfo();
+var i:word;
+begin
+	for i:=2 to 24 do begin gotoxy(66,i); frite(8,0,'л'); end;
+	textcolor(7);
+	textbackground(0);
+	gotoxy(68,3);
+	write('"P": pause');
+end;
+procedure hideInfo();
+var i:word;
+begin
+	//for i:=2 to 24 do begin gotoxy(66,i); frite(0,0,' '); end;
+	window(66,2,79,24);
+	textbackground(0);
+	clrscr;
+	window(1,1,80,25);
+end;
 procedure draw();
 var i,j:integer;
 begin
@@ -160,8 +179,9 @@ begin
 		else frite(4,7,species[mobs[counter].number].letter);
 	end;
 ///////////////////
-	if (isMoneyChanged) then begin textcolor(0); textbackground(7); gotoxy(20,25); write(money:3); isMoneyChanged:=false; end;
+	if (isMoneyChanged) then begin textcolor(0); textbackground(7); gotoxy(20,25); write(money:4,' '); isMoneyChanged:=false; end;
 	if (isHpChanged) then begin textcolor(0); textbackground(7); gotoxy(8,25); write(hp:3);	isHpChanged:=false; end;
+	if (isPauseChanged) then if paused then begin gotoxy(33,1); frite(0,7,'['); gotoxy(48,1); frite(0,7,']'); isPauseChanged:=false; end else begin gotoxy(33,1); frite(0,7,' '); gotoxy(48,1); frite(0,7,' '); isPauseChanged:=false; end;
 	gotoxy(x+tx,y+ty);
 	lastRedraw:=now;
 end;
@@ -226,13 +246,15 @@ end;
 ////////////////////
 
 begin
+	paused:=false;
+	isInfoVis:=false;
 	window(1,1,80,25);
 	clrscr;
 	gotoxy(1,25); textcolor(8); textbackground(7); write('ллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл');
 	//gotoxy(80,25); write('л',#13);
 	tx:=25; ty:=2;
-	gotoxy(1,1); textcolor(8); textbackground(7); write('лллллллллллллллллллллллллллллллл');
-	gotoxy(49,1); write('лллллллллллллллллллллллллллллллл');
+	gotoxy(1,1); textcolor(8); textbackground(7); write('ллллллллллллллллллллллллллллллл');
+	gotoxy(50,1); write('ллллллллллллллллллллллллллллллл');
 	for j:=2 to 24 do begin
 		gotoxy(1,j);
 		frite(8,0,'л');
@@ -240,7 +262,7 @@ begin
 		frite(8,0,'л');
 	end;
 	
-	gotoxy(33,1); textcolor(0); textbackground(7); write(' Pascal Defence ');
+	gotoxy(32,1); textcolor(0); textbackground(7); write('  Pascal Defence  ');
 	assign(input, '1.map'); reset(input);
 	for j:=1 to 20 do begin
 		for i:= 1 to 30 do begin
@@ -285,7 +307,7 @@ begin
 //gotoxy(1,22);
 //write('ЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭ');
 gotoxy(3,25); write(' HP:     ');
-gotoxy(16,25); write(' $:     ');
+gotoxy(16,25); write(' $:      ');
 isMoneyChanged:=true; isHpChanged:=true;
 x:=1; y:=1;
 lastUpdate:=now; lastRedraw:=now;
@@ -294,20 +316,29 @@ repeat
 		K:=GetKeyEvent;
 		K:=TranslateKeyEvent(K);
 		case GetKeyEventChar(K) of
-		'd': if (x<30) then x:=x+1;
-		'a': if (x>1) then x:=x-1;
-		's': if (y<20) then y:=y+1;
-		'w': if (y>1) then y:=y-1;
-		'h': if ((money>=10) and isAvailable(map[x,y])) then begin buildTower(0,x,y); end;
-		'j': if ((money>=20) and isAvailable(map[x,y])) then begin buildTower(1,x,y); end;
-		'k': map[x,y]:=' ';
-		'l': map[x,y]:='f';
-		'p': destroyTower(x,y);
-		//'g': gameOver();
+			'd','Ђ': if (x<30) then x:=x+1;
+			'a','ф': if (x>1) then x:=x-1;
+			's','ы': if (y<20) then y:=y+1;
+			'w','ц': if (y>1) then y:=y-1;
+			'h','р': if ((money>=10) and isAvailable(map[x,y])) then begin buildTower(0,x,y); end;
+			'j','Ў': if ((money>=20) and isAvailable(map[x,y])) then begin buildTower(1,x,y); end;
+			'k','Ћ': map[x,y]:=' ';
+			'l','Є': map[x,y]:='f';
+			'i','ш': begin isInfoVis:=not isInfoVis; if isInfoVis then drawInfo else hideInfo; end;
+			'p','Ї': begin paused:=not paused; isPauseChanged:=true end;
+			'r','Њ': destroyTower(x,y);
+			//'g': gameOver();
 		end;
+		case k of
+			33619713: begin isInfoVis:=not isInfoVis; if isInfoVis then drawInfo else hideInfo; end;
+			33619745: if (y>1) then y:=y-1;
+			33619751: if (y<20) then y:=y+1;
+			33619749: if (x<30) then x:=x+1;
+			33619747: if (x>1) then x:=x-1;
+		end
 	end;
 	if (MilliSecondsBetween(lastRedraw,now)>40) then draw();
-	if (MilliSecondsBetween(lastUpdate,now)>40) then update();
+	if ((MilliSecondsBetween(lastUpdate,now)>40) and not paused) then update();
 Until (GetKeyEventChar(K)='q');
 DoneKeyBoard;
 end.
