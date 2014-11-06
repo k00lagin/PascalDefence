@@ -1,5 +1,6 @@
 program game;
 uses crt,keyboard,sysutils,DateUtils;
+const decayTime = 1000;
 type
 	coord = 1..30;
 	mob = record
@@ -39,8 +40,14 @@ type
 		x,y : coord;
 		dir : byte;
 	end;
+	pack = record
+		mobsKind : byte;
+		mobsValue : byte;
+		delay : word;
+		gap: word;
+		lastSpawn: TDateTime;
+	end;
 var a:char;
-
 b:integer;
 x,y,tx,ty,i,j,f,counter:shortint;
 map,prevmap: array[1..30,1..20] of char;
@@ -205,6 +212,8 @@ begin
 	    		't': frite(6,7,'t');  //small tower
 	    		'T': frite(6,7,'T');  //big tower
 	 	    	'b': frite(8,6,'°'); //black ground
+	    		'w': frite(9,1,'±'); //water
+	    		'W': frite(9,1,' '); //deep water
 	  			'²','±','°','<','>','^','v': begin if odd(i) then frite(8,7,'Ü') else frite(8,7,'ß'); end //exit,entrance,path
 	  			else frite(7,0,map[i,j]);
 	  		end;
@@ -221,6 +230,8 @@ begin
 	    	't': frite(6,7,'t');  //small tower
 	    	'T': frite(6,7,'T');  //big tower
 	    	'b': frite(8,6,'°'); //black ground
+	    	'w': frite(9,1,'±'); //water
+	    	'W': frite(9,1,' '); //deep water
 	    	'²','±','°','<','>','^','v': begin if odd(toRedraw[i].x) then frite(8,7,'Ü') else frite(8,7,'ß'); end //exit,entrance,path
 	    	else frite(7,0,map[toRedraw[i].x,toRedraw[i].y]);
 	    end;
@@ -264,7 +275,7 @@ var a,i,j:Integer;
 begin
 	if (high(mobs)>=0) then
 	for counter:=high(mobs) downto 0 do begin
-		if (MilliSecondsBetween(mobs[counter].lastStep,now)>species[mobs[counter].number].stepDelay) then begin
+		if ((MilliSecondsBetween(mobs[counter].lastStep,now)>species[mobs[counter].number].stepDelay) and (mobs[counter].hp>0)) then begin
 			a:=high(toRedraw);
 			setlength(toRedraw,a + 2);
 			inc(a);
@@ -284,16 +295,17 @@ begin
 			end;
 			mobs[counter].lastStep:=now;
 		end;
-		if (map[mobs[counter].x,mobs[counter].y]='°') then begin decHP(species[mobs[counter].number].damage); removeMob(counter); end;
+		if (map[mobs[counter].x,mobs[counter].y]='°') then begin decHP(species[mobs[counter].number].damage); removeMob(counter); end
+		else if ((mobs[counter].hp=-1) and (MilliSecondsBetween(mobs[counter].lastStep,now)>decayTime)) then removeMob(counter);
 	end;
 	if (high(towers)>=0) then
 	for i:=0 to high(towers) do
 		for j:=0 to high(mobs) do begin
 			if (MilliSecondsBetween(towers[i].lastShoot,now)>=kinds[towers[i].number].cooldown) then
-			if ((abs(towers[i].x - mobs[j].x) <= kinds[towers[i].number].range) and (abs(towers[i].y - mobs[j].y) <= kinds[towers[i].number].range)) then begin
+			if ((abs(towers[i].x - mobs[j].x) <= kinds[towers[i].number].range) and (abs(towers[i].y - mobs[j].y) <= kinds[towers[i].number].range) and (mobs[j].hp>0)) then begin
 				if (mobs[j].hp>=kinds[towers[i].number].damage) then mobs[j].hp:=mobs[j].hp - kinds[towers[i].number].damage
 				else mobs[j].hp:= 0;
-				if (mobs[j].hp=0) then begin money:=money+10; isMoneyChanged:=true; removeMob(j); end;
+				if (mobs[j].hp=0) then begin mobs[j].hp:=-1; money:=money+10; isMoneyChanged:=true; mobs[j].lastStep:=now; end;
 				towers[i].lastShoot:=now;
 				break;
 			end;
@@ -344,11 +356,11 @@ begin
 	hp:=200;
 	money:=100;
 	setlength(species,2);
-	species[0].letter:='W';
+	species[0].letter:='w';
 	species[0].maxHp:=200;
 	species[0].stepDelay:=400;
 	species[0].damage:=10;
-	species[1].letter:='S';
+	species[1].letter:='~';
 	species[1].maxHp:=160;
 	species[1].stepDelay:=100;
 	species[1].damage:=10;
